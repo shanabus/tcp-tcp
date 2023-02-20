@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using TCP_TCP.Shared.Model
+@using Newtonsoft.Json
 @inject NavigationManager Navigation
 @inject DialogService DialogService
 @using Microsoft.AspNetCore.SignalR.Client
@@ -69,64 +70,31 @@
 
     List<Table> Tables { get; set; } = new List<Table>();
 
-    string seatColor = "green";
-
     protected override async Task OnInitializedAsync()
     {
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/tablehub"))
+            .AddNewtonsoftJsonProtocol(opts => 
+                opts.PayloadSerializerSettings.TypeNameHandling = TypeNameHandling.Auto)    
             .Build();
 
-        hubConnection.On<string>("ToggleSeat", (seatPosition) =>
-        {
-            var target = Tables.SelectMany(x => x.Seats).First(x => x.Position == seatPosition);
-            if (target != null)
-            {
-                Console.WriteLine(seatPosition + " toggled to " + (!target.Active).ToString());
-
-                target.Active = !target.Active;
-                if (!target.Active)
-                {
-                    target.SecondShow = false;
-                }
-            }
-            InvokeAsync(StateHasChanged);
-        });
-        hubConnection.On<string>("DoubleActive", (seatPosition) =>
-        {
-            var target = Tables.SelectMany(x => x.Seats).First(x => x.Position == seatPosition);
-            if (target != null)
-            {
-                target.Active = true;
-                target.SecondShow = true;
-            }
+        hubConnection.On<List<Table>, string>("UpdateSeats", (tables, seatPosition) =>
+        {            
+            Tables = tables;
             InvokeAsync(StateHasChanged);
         });
 
-        hubConnection.On("SeatsReset", () => {
-            Tables.ForEach(t => t.Seats.ForEach(s => { s.Active = false; s.SecondShow = false; }));
+        hubConnection.On<List<Table>>("TablesSet", (tables) => {
+            Tables = tables;
             InvokeAsync(StateHasChanged);
         });
 
         await hubConnection.StartAsync();
     
-
-        Tables.Add(new Table("1", 1, 8));
-        Tables.Add(new Table("2", 1, 8));
-        Tables.Add(new Table("3", 1, 8));
-        Tables.Add(new Table("4", 1, 8));        
-        Tables.Add(new Table("5", 1, 8));
-
-        Tables.Add(new Table("12", 2, 3));
-        Tables.Add(new Table("6", 2, 8));
-        Tables.Add(new Table("7", 2, 8));
-        Tables.Add(new Table("8", 2, 8));
-        Tables.Add(new Table("9", 2, 8));
-
-        
-        Tables.Add(new Table("13", 3, 3));
-        Tables.Add(new Table("11", 3, 6));
-        Tables.Add(new Table("10", 3, 6));
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("GetTables");
+        }
     }
 
     public async Task SeatClickAsync(string seatPosition) 
@@ -160,14 +128,6 @@
         var result = await DialogService.Confirm("Are you sure?", "Reset Seats", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" }); 
 
         if (result.HasValue && result == true && hubConnection is not null)
-        {
-            await hubConnection.SendAsync("ResetSeats");
-        }
-    }
-
-    public async Task ResetSeatsConfirmed() 
-    {
-        if (hubConnection is not null)
         {
             await hubConnection.SendAsync("ResetSeats");
         }

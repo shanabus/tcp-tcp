@@ -1,0 +1,180 @@
+﻿@page "/"
+@using TCP_TCP.Shared.Model
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@using Microsoft.AspNetCore.SignalR.Client
+
+<RadzenDialog />
+
+<RadzenLayout Style="grid-template-columns: auto 1fr auto; grid-template-areas: 'rz-header rz-header rz-header' 'rz-sidebar rz-body rz-right-sidebar'">
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+            <RadzenLabel Text="TCP : Table Coordination Program" Class="rz-mt-4 rz-mb-1 rz-mx-4" />
+        </RadzenStack>
+    </RadzenHeader>    
+    <RadzenBody>
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="2rem" Class="rz-mb-4">
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+                <RadzenCard Class="">
+                    Seats with humans: @Tables.SelectMany(x => x.Seats).Count(x => x.Active)
+                </RadzenCard>
+            </RadzenColumn>
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+                <RadzenCard Class="">
+                    Seats available: @Tables.SelectMany(x => x.Seats).Count(x => !x.Active)
+                </RadzenCard>
+            </RadzenColumn>
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">                
+                <RadzenButton Text="Reset Seats" Style="width: 100%;" Class="rz-py-4" ButtonStyle="ButtonStyle.Primary" Click=@ConfirmSeatReset />                
+            </RadzenColumn>
+            
+                        
+        </RadzenRow>
+        @{
+            int tableXOffset = 70;
+            int circleXStart = tableXOffset - 25;
+            int circleYStart = 25;
+        }           
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-2rem">  
+            @foreach (var table in Tables.Where(x => x.Row == 1))
+            {   
+                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+            }
+        </RadzenRow>
+        @{
+            tableXOffset = 50;
+            circleXStart = tableXOffset - 25;        
+        }  
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="1rem">  
+            @foreach (var table in Tables.Where(x => x.Row == 2))
+            {   
+                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+            }
+        </RadzenRow>
+        @{
+            tableXOffset = 50;
+            circleXStart = tableXOffset - 25;        
+        }  
+        <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Normal" Gap="18rem">  
+            @foreach (var table in Tables.Where(x => x.Row == 3))
+            {   
+                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+            }
+        </RadzenRow>
+    </RadzenBody>
+</RadzenLayout>
+
+@code {
+    private HubConnection? hubConnection;
+
+    List<Table> Tables { get; set; } = new List<Table>();
+
+    string seatColor = "green";
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/tablehub"))
+            .Build();
+
+        hubConnection.On<string>("ToggleSeat", (seatPosition) =>
+        {
+            var target = Tables.SelectMany(x => x.Seats).First(x => x.Position == seatPosition);
+            if (target != null)
+            {
+                Console.WriteLine(seatPosition + " toggled to " + (!target.Active).ToString());
+
+                target.Active = !target.Active;
+                if (!target.Active)
+                {
+                    target.SecondShow = false;
+                }
+            }
+            InvokeAsync(StateHasChanged);
+        });
+        hubConnection.On<string>("DoubleActive", (seatPosition) =>
+        {
+            Console.WriteLine(seatPosition + " long clicked");
+            var target = Tables.SelectMany(x => x.Seats).First(x => x.Position == seatPosition);
+            if (target != null)
+            {
+                target.Active = true;
+                target.SecondShow = true;
+            }
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On("SeatsReset", () => {
+            Tables.ForEach(t => t.Seats.ForEach(s => { s.Active = false; s.SecondShow = false; }));
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    
+
+        Tables.Add(new Table("1", 1, 8));
+        Tables.Add(new Table("2", 1, 8));
+        Tables.Add(new Table("3", 1, 8));
+        Tables.Add(new Table("4", 1, 8));
+
+        
+        Tables.Add(new Table("5", 2, 8));
+        Tables.Add(new Table("6", 2, 8));
+        Tables.Add(new Table("7", 2, 8));
+        Tables.Add(new Table("8", 2, 8));
+        Tables.Add(new Table("9", 2, 8));
+
+        
+        Tables.Add(new Table("12", 3, 2));
+        Tables.Add(new Table("11", 3, 4));
+        Tables.Add(new Table("10", 3, 4));
+    }
+
+    public async Task SeatClickAsync(string seatPosition) 
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("SeatedForShow", seatPosition);
+        }
+    }
+
+    public async Task SeatLongClickAsync(string seatPosition) 
+    {
+        Console.WriteLine($"trying to Long click: {seatPosition}");
+
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("StayingForSecondShow", seatPosition);
+        }
+    }
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    public async Task ConfirmSeatReset() {
+        Console.WriteLine("ConfirmSeatReset clicked");
+        
+        var result = await DialogService.Confirm("Are you sure?", "Reset Seats", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" }); 
+
+        if (result.HasValue && result == true && hubConnection is not null)
+        {
+            await hubConnection.SendAsync("ResetSeats");
+        }
+    }
+
+    public async Task ResetSeatsConfirmed() 
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("ResetSeats");
+        }
+    }
+}

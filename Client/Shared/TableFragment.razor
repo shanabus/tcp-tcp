@@ -1,0 +1,116 @@
+@inherits LayoutComponentBase
+@using TCP_TCP.Shared.Model
+
+<RadzenColumn Size="2" class="rz-color-info-dark rz-text-align-center rz-p-2">                 
+    <svg version="1.1" height="240" width="200" id="table-@Table.Position">
+        <g>
+            @if(Table.Seats.Count == 2) {
+                <circle cx="85" cy="50" r="35" fill="@TableFill" stroke="@TableStroke" />
+                <g>
+                    <text x="75" y="55">@Table.Position</text>
+                </g>
+
+                int circleXOffset = CircleXStart;
+                int xSideOffset = CircleXStart + 100;
+                
+                foreach (var seat in Table.Seats)
+                {   
+                    <g @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)">
+                        <circle cx="@circleXOffset" cy="50" r="20" stroke="@SeatStroke" fill='@SeatFill(seat)' />
+                    </g>  
+                    circleXOffset += 120;
+                }
+            } 
+            else if (Table.Seats.Count == 4) 
+            {
+                <rect width="185" height="50" fill="lightgrey" stroke="black" x="0" y="0"></rect>
+                <g>
+                    <text x="85" y="30">@Table.Position</text>
+                </g>
+
+                int circleXOffset = CircleXStart;
+                int circleYOffset = 75;
+                
+                @foreach (var seat in Table.Seats)
+                {           
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill="@SeatFill(seat)"  @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
+                    circleXOffset += 45;
+                }     
+            }
+            else {
+                    <rect width="50" height="185" fill="@TableFill" stroke="@TableStroke" x="@TableXOffset" y="0"></rect>
+                    <g>
+                        <text x="70" y="100">@Table.Position</text> 
+                    </g>
+                    
+                    
+                    int circleXOffset = CircleXStart;
+                    int circleYOffset = CircleYStart;
+                    int xSideOffset = CircleXStart + 100;
+                    
+                    @foreach (var seat in Table.Seats)
+                    {           
+                        <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill='@SeatFill(seat)' @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
+                        
+                        circleXOffset = circleXOffset == xSideOffset ? CircleXStart : xSideOffset;
+                        circleYOffset = circleXOffset == xSideOffset ? circleYOffset : circleYOffset + 45;
+                    }    
+            }
+        
+        </g>
+    </svg>
+</RadzenColumn>
+
+@code {
+
+    [Parameter]
+    public int TableXOffset { get; set; }
+    
+    [Parameter]
+    public int CircleXStart { get; set; }
+
+    [Parameter]
+    public int CircleYStart { get; set; }
+
+    [Parameter]
+    public Table Table { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string> SeatClickEvent { get; set; } = default!;       
+    
+    [Parameter]
+    public EventCallback<string> SeatLongClickEvent { get; set; } = default!;       
+
+    private DateTime PointerDownTime;
+
+    private string TableFill = "lightgrey";
+    private string TableStroke = "black";
+    private string SeatStroke = "black";
+
+
+    public void PointerDown()
+    {
+        PointerDownTime = DateTime.UtcNow;
+    }
+
+    public async Task PointerUp(string seatPosition)
+    {
+        var downTime = (DateTime.UtcNow.Ticks - PointerDownTime.Ticks) / TimeSpan.TicksPerMillisecond;
+
+        if (downTime > 400)
+        {
+            Console.WriteLine("Thats a long click for " + seatPosition + " / " + downTime.ToString());
+            await SeatLongClickEvent.InvokeAsync(seatPosition);
+        } else {
+            await SeatClickEvent.InvokeAsync(seatPosition);
+        }
+    }
+
+    public string SeatFill(Seat seat)
+    {
+        string seatFill = seat.Active ? "green" : "white";                    
+        seatFill = seat.SecondShow ? "gold" : seatFill;
+
+        return seatFill;
+    }
+}

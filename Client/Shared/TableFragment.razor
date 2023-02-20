@@ -2,63 +2,79 @@
 @using TCP_TCP.Shared.Model
 
 <RadzenColumn Size="2" class="rz-color-info-dark rz-text-align-center rz-p-2">                 
-    <svg version="1.1" height="240" width="200" id="table-@Table.Position">
-        <g>
-            @if(Table.Seats.Count == 2) {
+    @if(Table.Seats.Count == 3) 
+    {
+        <svg version="1.1" height="240" width="200" id="table-@Table.Position">
+            <g>
                 <circle cx="85" cy="50" r="35" fill="@TableFill" stroke="@TableStroke" />
                 <g>
                     <text x="75" y="55">@Table.Position</text>
                 </g>
 
-                int circleXOffset = CircleXStart;
-                int xSideOffset = CircleXStart + 100;
+                @{
+                    int circleXOffset = CircleXStart;
+                    int xSideOffset = CircleXStart + 100;
+                    int circleYOffset = 50;
+                }
                 
-                foreach (var seat in Table.Seats)
+                @foreach (var seat in Table.Seats)
                 {   
                     <g @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)">
-                        <circle cx="@circleXOffset" cy="50" r="20" stroke="@SeatStroke" fill='@SeatFill(seat)' />
+                        <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill='@SeatFill(seat)' />
                     </g>  
-                    circleXOffset += 120;
+                    circleXOffset = (circleXOffset == CircleXStart)? CircleXStart + 120 : circleXOffset - 60;
+                    circleYOffset = (circleXOffset == CircleXStart || circleXOffset == CircleXStart + 120)? circleYOffset: circleYOffset + 60 ;
                 }
-            } 
-            else if (Table.Seats.Count == 4) 
-            {
-                <rect width="185" height="50" fill="lightgrey" stroke="black" x="0" y="0"></rect>
+            </g>
+        </svg>
+    }         
+    else if (Table.Seats.Count == 6) 
+    {
+        <svg version="1.1" height="200" width="280" id="table-@Table.Position">
+            <g>
+                <rect width="270" height="50" fill="@TableFill" stroke="black" x="0" y="0"></rect>
                 <g>
-                    <text x="85" y="30">@Table.Position</text>
+                    <text x="125" y="30">@Table.Position</text>
                 </g>
 
-                int circleXOffset = CircleXStart;
-                int circleYOffset = 75;
+                @{
+                    int circleXOffset = CircleXStart;
+                    int circleYOffset = 75;
+                }
                 
                 @foreach (var seat in Table.Seats)
                 {           
                     <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill="@SeatFill(seat)"  @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
                     circleXOffset += 45;
                 }     
-            }
-            else {
-                    <rect width="50" height="185" fill="@TableFill" stroke="@TableStroke" x="@TableXOffset" y="0"></rect>
-                    <g>
-                        <text x="70" y="100">@Table.Position</text> 
-                    </g>
-                    
-                    
+            </g>
+        </svg>
+    }
+    else 
+    {
+        <svg version="1.1" height="240" width="200" id="table-@Table.Position">
+            <g>
+                <rect width="50" height="185" fill="@TableFill" stroke="@TableStroke" x="@TableXOffset" y="0"></rect>
+                <g>
+                    <text x="70" y="100">@Table.Position</text> 
+                </g>
+                
+                @{
                     int circleXOffset = CircleXStart;
                     int circleYOffset = CircleYStart;
                     int xSideOffset = CircleXStart + 100;
+                }
+                
+                @foreach (var seat in Table.Seats)
+                {           
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill='@SeatFill(seat)' @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
                     
-                    @foreach (var seat in Table.Seats)
-                    {           
-                        <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill='@SeatFill(seat)' @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
-                        
-                        circleXOffset = circleXOffset == xSideOffset ? CircleXStart : xSideOffset;
-                        circleYOffset = circleXOffset == xSideOffset ? circleYOffset : circleYOffset + 45;
-                    }    
-            }
-        
-        </g>
-    </svg>
+                    circleXOffset = circleXOffset == xSideOffset ? CircleXStart : xSideOffset;
+                    circleYOffset = circleXOffset == xSideOffset ? circleYOffset : circleYOffset + 45;
+                }    
+            </g>
+        </svg>
+    }
 </RadzenColumn>
 
 @code {
@@ -87,6 +103,12 @@
     private string TableStroke = "black";
     private string SeatStroke = "black";
 
+    protected override bool ShouldRender()
+    {
+        TableFill = Table.Seats.All(x => x.Active || x.SecondShow)? "green" : TableFill;
+
+        return base.ShouldRender();
+    }
 
     public void PointerDown()
     {

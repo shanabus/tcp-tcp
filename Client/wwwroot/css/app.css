@@ -53,19 +53,20 @@ h1:focus {
     transform: rotate(3deg);
 }
 #table-3 {
-    transform: rotate(-3deg);
+    transform: rotate(0deg);
 }
 #table-4 {
-    transform: rotate(-8deg);
+    transform: rotate(-3deg);
 }
 #table-5 {
-    transform: rotate(8deg);
+    transform: rotate(-8deg);
 }
+
 #table-6 {
     transform: rotate(3deg);
 }
 #table-8 {
-    transform: rotate(-8deg);
+    transform: rotate(-6deg);
 }
 #table-9 {
     transform: rotate(-8deg);

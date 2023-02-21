@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject DialogService DialogService
 @using Microsoft.AspNetCore.SignalR.Client
+@using System.Timers
 
 <RadzenDialog />
 
@@ -28,6 +29,11 @@
             <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">                
                 <RadzenButton Text="Reset Seats" Style="width: 100%;" Class="rz-py-4" ButtonStyle="ButtonStyle.Primary" Click=@ConfirmSeatReset />                
             </RadzenColumn>
+            <RadzenColumn Size="1" class="rz-color-info-dark rz-text-align-center rz-p-2">                
+                <RadzenButton Class="rz-py-4" ButtonStyle="ButtonStyle.Secondary" Click=@GetStatisticalDataClick>                
+                    <RadzenIcon Icon="grade" />
+                </RadzenButton>
+            </RadzenColumn>
             
                         
         </RadzenRow>
@@ -39,7 +45,7 @@
         <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem">  
             @foreach (var table in Tables.Where(x => x.Row == 1))
             {   
-                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" HotSeats="@HotSeats" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
         @{
@@ -49,7 +55,7 @@
         <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem">  
             @foreach (var table in Tables.Where(x => x.Row == 2))
             {   
-                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" HotSeats="@HotSeats" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
         @{
@@ -59,7 +65,7 @@
         <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Normal" Gap="-9rem">  
             @foreach (var table in Tables.Where(x => x.Row == 3))
             {   
-                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" HotSeats="@HotSeats" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
     </RadzenBody>
@@ -70,8 +76,16 @@
 
     List<Table> Tables { get; set; } = new List<Table>();
 
+    Dictionary<string, int> HotSeats { get; set; } = new Dictionary<string, int>();
+
+    private Timer timerObj;
+
     protected override async Task OnInitializedAsync()
     {
+        timerObj = new Timer(5000);
+        timerObj.Elapsed += OnUserFinish;
+        timerObj.AutoReset = false;
+
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/tablehub"))
             .AddNewtonsoftJsonProtocol(opts => 
@@ -89,11 +103,33 @@
             InvokeAsync(StateHasChanged);
         });
 
+        hubConnection.On<Dictionary<string, int>>("TableStatistics", (data) => {            
+            HotSeats = data;
+            timerObj.Start();
+            InvokeAsync(StateHasChanged);
+        });
+
         await hubConnection.StartAsync();
     
         if (hubConnection is not null)
         {
             await hubConnection.SendAsync("GetTables");
+        }
+    }
+
+    private void OnUserFinish(Object source, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            HotSeats = new Dictionary<string, int>();
+            StateHasChanged();
+        });
+    }
+        public async Task GetStatisticalDataClick()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("GetTableStatisticData");
         }
     }
 

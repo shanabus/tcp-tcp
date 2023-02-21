@@ -9,6 +9,7 @@ public class TableHub : Hub
     private readonly MyMemoryCache _memoryCache = default!;
     
     private string CacheKey_TableLayout = "Table_Layout";
+    private string CacheKey_TableData = "Table_Data";
 
     public TableHub(MyMemoryCache memoryCache)
     {
@@ -32,7 +33,6 @@ public class TableHub : Hub
             target.Active = !target.Active;
             if (!target.Active && target.SecondShow)
             {
-                Console.WriteLine("false to remove 2nd show");
                 target.SecondShow = false;
             }
         }
@@ -61,10 +61,19 @@ public class TableHub : Hub
     public async Task ResetSeats()
     {
         var tables = GetTableLayout();
+        var saved = SetTableStatistics(tables);
+
         tables.ForEach(t => t.Seats.ForEach(s => { s.Active = false; s.SecondShow = false; }));
+
         SetTableLayout(tables);
 
         await Clients.All.SendAsync("TablesSet", tables);
+    }
+
+    public async Task GetTableStatisticData()
+    {
+        var data = GetTableStatistics();
+        await Clients.Caller.SendAsync("TableStatistics", data);
     }
 
     protected List<Table> GetTableLayout()
@@ -73,9 +82,6 @@ public class TableHub : Hub
 
         if (!_memoryCache.Cache.TryGetValue<List<Table>>(CacheKey_TableLayout, out tables))
         {
-
-            // Console.WriteLine("Cache not found for tables");
-            
             tables = new List<Table>();
             tables.Add(new Table("1", 1, 8));
             tables.Add(new Table("2", 1, 8));
@@ -95,19 +101,47 @@ public class TableHub : Hub
             tables.Add(new Table("10", 3, 6));
 
             SetTableLayout(tables);
-        } else {
-            // Console.WriteLine("Found a table in cache!");
         }
-
         return tables;
     }
 
     protected void SetTableLayout(List<Table> tables)
     {
-        // Console.WriteLine("Saving changes to Table layout");
-
         var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(6)).SetSize(1);
         
         _memoryCache.Cache.Set(CacheKey_TableLayout, tables, cacheEntryOptions);
+    }
+
+    protected Dictionary<string, int> GetTableStatistics() {
+        Dictionary<string, int> tableData;
+        
+        if (!_memoryCache.Cache.TryGetValue<Dictionary<string, int>>(CacheKey_TableData, out tableData))
+        {
+            tableData = new Dictionary<string, int>();            
+        }
+        return tableData;
+    }
+    
+    protected Dictionary<string, int> SetTableStatistics(List<Table> tables) 
+    {
+        var existingData = GetTableStatistics();
+
+        foreach(var s in tables.SelectMany(x => x.Seats).Where(x => x.Active || x.SecondShow)){
+            var score = s.SecondShow ? 2 : 1;
+            if (existingData.ContainsKey(s.Position))
+            {                
+                var ss = existingData[s.Position] += score;
+            }
+            else 
+            {
+                existingData.Add(s.Position, score);
+            }
+        }
+
+        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromDays(7)).SetSize(10);
+        
+        _memoryCache.Cache.Set(CacheKey_TableData, existingData, cacheEntryOptions);
+
+        return existingData;
     }
 }

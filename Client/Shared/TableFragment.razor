@@ -29,7 +29,7 @@
             <div class="round-table">@Table.Position</div>
             <div class="seat seat-1" style="background-color: @SeatFill(Table.Seats[0])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[0].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[0].Position)"></div>
             <div class="seat seat-2" style="background-color: @SeatFill(Table.Seats[1])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[1].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[1].Position)"></div>
-            <div class="seat seat-3" style="background-color: @SeatFill(Table.Seats[2])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[1].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[1].Position)"></div>
+            <div class="seat seat-3" style="background-color: @SeatFill(Table.Seats[2])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[2].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[2].Position)"></div>
         </div>
     }         
     else if (Table.Seats.Count == 6) 

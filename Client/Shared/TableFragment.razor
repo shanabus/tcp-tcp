@@ -27,9 +27,9 @@
         </svg> *@
         <div class="table-wrapper round-table-wrapper">
             <div class="round-table">@Table.Position</div>
-            <div class="seat seat-1" style="background-color: @SeatFill(Table.Seats[0])" @onmousedown="PointerDown" @onmouseup="() => PointerUp(Table.Seats[0].Position)"></div>
-            <div class="seat seat-2" style="background-color: @SeatFill(Table.Seats[1])" @onmousedown="PointerDown" @onmouseup="() => PointerUp(Table.Seats[1].Position)"></div>
-            <div class="seat seat-3" style="background-color: @SeatFill(Table.Seats[2])" @onmousedown="PointerDown" @onmouseup="() => PointerUp(Table.Seats[2].Position)"></div>
+            <div class="seat seat-1" style="background-color: @SeatFill(Table.Seats[0])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[0].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[0].Position)"></div>
+            <div class="seat seat-2" style="background-color: @SeatFill(Table.Seats[1])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[1].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[1].Position)"></div>
+            <div class="seat seat-3" style="background-color: @SeatFill(Table.Seats[2])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[1].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[1].Position)"></div>
         </div>
     }         
     else if (Table.Seats.Count == 6) 
@@ -64,7 +64,7 @@
                 }
                 @foreach (var seat in Table.Seats)
                 {           
-                    <button type="button" class="seat" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onmousedown="PointerDown" @onmouseup="() => PointerUp(seat.Position)" style="left: @circleXOffset; border: 1px solid @SeatStroke(seat); background-color: @SeatFill(seat);"></button>
+                    <button type="button" class="seat" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(seat.Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" style="left: @circleXOffset; border: 1px solid @SeatStroke(seat); background-color: @SeatFill(seat);"></button>
                     circleXOffset += 45;
                 } 
             </div>
@@ -87,7 +87,7 @@
                 
                 @foreach (var seat in Table.Seats)
                 {           
-                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="circle-seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @onmousedown="PointerDown" @onmouseup="() => PointerUp(seat.Position)" />
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="circle-seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart="PointerDown" @ontouchend="() => PointerUp(seat.Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
                     
                     circleXOffset = circleXOffset == xSideOffset ? CircleXStart : xSideOffset;
                     circleYOffset = circleXOffset == xSideOffset ? circleYOffset : circleYOffset + 45;
@@ -137,7 +137,7 @@
     {
         var downTime = (DateTime.UtcNow.Ticks - PointerDownTime.Ticks) / TimeSpan.TicksPerMillisecond;
 
-        if (downTime > 400)
+        if (downTime > 500)
         {
             await SeatLongClickEvent.InvokeAsync(seatPosition);
         } else {

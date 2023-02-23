@@ -58,13 +58,19 @@ public class TableHub : Hub
         await Clients.All.SendAsync("UpdateSeats", tables, seatPosition);
     }
 
-    public async Task ResetSeats()
+    public async Task ResetSeats(bool allSeats)
     {
         var tables = GetTableLayout();
         var saved = SetTableStatistics(tables);
 
-        tables.ForEach(t => t.Seats.ForEach(s => { s.Active = false; s.SecondShow = false; }));
-
+        if (allSeats)
+        {
+            tables.ForEach(t => t.Seats.ForEach(s => { s.Active = false; s.SecondShow = false; }));
+        }
+        else
+        {
+            tables.ForEach(t => t.Seats.Where(x => !x.SecondShow).ToList().ForEach(s => { s.Active = false; s.SecondShow = false; }));
+        }
         SetTableLayout(tables);
 
         await Clients.All.SendAsync("TablesSet", tables);

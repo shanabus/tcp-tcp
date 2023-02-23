@@ -25,11 +25,12 @@
                 }
             </g>
         </svg> *@
+        
         <div class="table-wrapper round-table-wrapper">
             <div class="round-table">@Table.Position</div>
-            <div class="seat seat-1" style="background-color: @SeatFill(Table.Seats[0])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[0].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[0].Position)"></div>
-            <div class="seat seat-2" style="background-color: @SeatFill(Table.Seats[1])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[1].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[1].Position)"></div>
-            <div class="seat seat-3" style="background-color: @SeatFill(Table.Seats[2])" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(Table.Seats[2].Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(Table.Seats[2].Position)"></div>
+            <div class="seat seat-1" style="background-color: @SeatFill(Table.Seats[0])" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", Table.Seats[0].Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", Table.Seats[0].Position)'></div>
+            <div class="seat seat-2" style="background-color: @SeatFill(Table.Seats[1])" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", Table.Seats[1].Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", Table.Seats[1].Position)'></div>
+            <div class="seat seat-3" style="background-color: @SeatFill(Table.Seats[2])" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", Table.Seats[2].Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", Table.Seats[2].Position)'></div>
         </div>
     }         
     else if (Table.Seats.Count == 6) 
@@ -64,7 +65,7 @@
                 }
                 @foreach (var seat in Table.Seats)
                 {           
-                    <button type="button" class="seat" @ontouchstart="PointerDown" @ontouchend="() => PointerUp(seat.Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" style="left: @circleXOffset; border: 1px solid @SeatStroke(seat); background-color: @SeatFill(seat);"></button>
+                    <button type="button" class="seat" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' style="left: @circleXOffset; border: 1px solid @SeatStroke(seat); background-color: @SeatFill(seat);"></button>
                     circleXOffset += 45;
                 } 
             </div>
@@ -87,7 +88,7 @@
                 
                 @foreach (var seat in Table.Seats)
                 {           
-                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="circle-seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart="PointerDown" @ontouchend="() => PointerUp(seat.Position)" @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="circle-seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
                     
                     circleXOffset = circleXOffset == xSideOffset ? CircleXStart : xSideOffset;
                     circleYOffset = circleXOffset == xSideOffset ? circleYOffset : circleYOffset + 45;
@@ -126,23 +127,28 @@
     private string TableStroke = "black";
     private string SeatStrokeDefault = "black";
 
+    private string EventSource = "";
+
     public string TableFillColor() => Table.Seats.All(x => x.Active || x.SecondShow)? "green" : TableFill;
 
-    public void PointerDown()
+    public void PointerDown(string source)
     {
+        EventSource = EventSource == ""? source : EventSource;
         PointerDownTime = DateTime.UtcNow;
     }
 
-    public async Task PointerUp(string seatPosition)
+    public async Task PointerUp(string source, string seatPosition)
     {
-        var downTime = (DateTime.UtcNow.Ticks - PointerDownTime.Ticks) / TimeSpan.TicksPerMillisecond;
-
-        if (downTime > 500)
-        {
-            await SeatLongClickEvent.InvokeAsync(seatPosition);
-        } else {
-            await SeatClickEvent.InvokeAsync(seatPosition);
-        }
+        if (source == EventSource){
+            var downTime = (DateTime.UtcNow.Ticks - PointerDownTime.Ticks) / TimeSpan.TicksPerMillisecond;
+            if (downTime > 400)
+            {
+                await SeatLongClickEvent.InvokeAsync(seatPosition);
+            } else {
+                await SeatClickEvent.InvokeAsync(seatPosition);
+            }
+            EventSource = "";
+        }        
     }
 
     public string SeatFill(Seat seat)

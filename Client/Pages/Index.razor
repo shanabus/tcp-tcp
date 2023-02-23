@@ -27,7 +27,7 @@
                 </RadzenCard>
             </RadzenColumn>
             <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">                
-                <RadzenButton Text="Reset Seats" Style="width: 100%;" Class="rz-py-4" ButtonStyle="ButtonStyle.Primary" Click=@ConfirmSeatReset />                
+                <RadzenButton Text="Reset Seats" Style="width: 100%;" Class="rz-py-4" ButtonStyle="ButtonStyle.Primary" Click=@ShowSimpleDialog />                
             </RadzenColumn>
             <RadzenColumn Size="1" class="rz-color-info-dark rz-text-align-center rz-p-2">                
                 <RadzenButton Class="rz-py-4" ButtonStyle="ButtonStyle.Secondary" Click=@GetStatisticalDataClick>                
@@ -125,7 +125,8 @@
             StateHasChanged();
         });
     }
-        public async Task GetStatisticalDataClick()
+
+    public async Task GetStatisticalDataClick()
     {
         if (hubConnection is not null)
         {
@@ -160,12 +161,24 @@
         }
     }
 
-    public async Task ConfirmSeatReset() {
-        var result = await DialogService.Confirm("Are you sure?", "Reset Seats", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" }); 
-
-        if (result.HasValue && result == true && hubConnection is not null)
+    public async Task Reset(Boolean resetAll) {
+        if (hubConnection is not null)
         {
-            await hubConnection.SendAsync("ResetSeats");
+            await hubConnection.SendAsync("ResetSeats", resetAll);
         }
+        DialogService.Close();
     }
+
+    async Task ShowSimpleDialog() => await DialogService.OpenAsync("Reset Seats?", ds =>
+    @<RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="1rem" Class="rz-mb-4">
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+                <RadzenButton Text="Yes, All Seats" Click="() => Reset(true)" ButtonStyle="ButtonStyle.Warning" />
+            </RadzenColumn>
+            <RadzenColumn Size="4" class="rz-color-info-dark rz-text-align-center rz-p-2">
+                <RadzenButton Text="Yes, Current Show" Click="() => Reset(false)" ButtonStyle="ButtonStyle.Primary" />
+            </RadzenColumn>
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+                <RadzenButton Text="No, Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Secondary" />
+            </RadzenColumn>
+    </RadzenRow>, new DialogOptions { Width = "900px"});
 }

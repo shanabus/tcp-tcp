@@ -28,9 +28,7 @@
                 <RadzenButton Class="rz-py-4" ButtonStyle="ButtonStyle.Secondary" Click=@GetStatisticalDataClick>                
                     <RadzenIcon Icon="grade" />
                 </RadzenButton>
-            </RadzenColumn>
-            
-                        
+            </RadzenColumn>                        
         </RadzenRow>
         @{
             int tableXOffset = 70;
@@ -80,11 +78,14 @@
     Dictionary<string, int> HotSeats { get; set; } = new Dictionary<string, int>();
 
     private Timer timerObj = default!;
+    
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
 
     protected override async Task OnInitializedAsync()
     {
         timerObj = new Timer(5000);
-        timerObj.Elapsed += OnUserFinish;
+        timerObj.Elapsed += OnHotSeatTimerFinish;
         timerObj.AutoReset = false;
 
         await BuildHubConnectionAsync();
@@ -94,7 +95,6 @@
             await hubConnection.SendAsync("GetTables");
         }
     }
-
 
     private async Task BuildHubConnectionAsync()
     {
@@ -146,7 +146,7 @@
         }        
     }
 
-    private void OnUserFinish(Object source, ElapsedEventArgs e)
+    private void OnHotSeatTimerFinish(Object source, ElapsedEventArgs e)
     {
         InvokeAsync(() =>
         {
@@ -178,9 +178,6 @@
             await hubConnection.SendAsync("StayingForSecondShow", seatPosition);
         }
     }
-
-    public bool IsConnected =>
-        hubConnection?.State == HubConnectionState.Connected;
 
     public async ValueTask DisposeAsync()
     {

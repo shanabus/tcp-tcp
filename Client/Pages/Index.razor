@@ -9,27 +9,22 @@
 <RadzenDialog />
 
 <RadzenLayout Style="grid-template-columns: auto 1fr auto; grid-template-areas: 'rz-header rz-header rz-header' 'rz-sidebar rz-body rz-right-sidebar'">
-    <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenLabel Text="TCP : Table Coordination Program" Class="rz-mt-4 rz-mb-1 rz-mx-4" />
-        </RadzenStack>
-    </RadzenHeader>    
     <RadzenBody>
         <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="2rem" Class="rz-mb-4">
-            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-1">
                 <RadzenCard Class="">
                     Seats with humans: @Tables.SelectMany(x => x.Seats).Count(x => x.Active)
                 </RadzenCard>
             </RadzenColumn>
-            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-1">
                 <RadzenCard Class="">
                     Seats available: @Tables.SelectMany(x => x.Seats).Count(x => !x.Active)
                 </RadzenCard>
             </RadzenColumn>
-            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">                
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-1">                
                 <RadzenButton Text="Reset Seats" Style="width: 100%;" Class="rz-py-4" ButtonStyle="ButtonStyle.Primary" Click=@ShowSimpleDialog />                
             </RadzenColumn>
-            <RadzenColumn Size="1" class="rz-color-info-dark rz-text-align-center rz-p-2">                
+            <RadzenColumn Size="1" class="rz-color-info-dark rz-text-align-center rz-p-1">                
                 <RadzenButton Class="rz-py-4" ButtonStyle="ButtonStyle.Secondary" Click=@GetStatisticalDataClick>                
                     <RadzenIcon Icon="grade" />
                 </RadzenButton>
@@ -70,6 +65,12 @@
         </RadzenRow>
     </RadzenBody>
 </RadzenLayout>
+<div id="components-reconnect-modal">
+    There was a problem with the connection!
+    (Current reconnect attempt: 
+    <span id="components-reconnect-current-attempt"></span> /
+    <span id="components-reconnect-max-retries"></span>)
+</div>
 
 @code {
     private HubConnection? hubConnection;
@@ -78,7 +79,7 @@
 
     Dictionary<string, int> HotSeats { get; set; } = new Dictionary<string, int>();
 
-    private Timer timerObj;
+    private Timer timerObj = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -86,35 +87,63 @@
         timerObj.Elapsed += OnUserFinish;
         timerObj.AutoReset = false;
 
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/tablehub"))
-            .AddNewtonsoftJsonProtocol(opts => 
-                opts.PayloadSerializerSettings.TypeNameHandling = TypeNameHandling.Auto)    
-            .Build();
-
-        hubConnection.On<List<Table>, string>("UpdateSeats", (tables, seatPosition) =>
-        {            
-            Tables = tables;
-            InvokeAsync(StateHasChanged);
-        });
-
-        hubConnection.On<List<Table>>("TablesSet", (tables) => {
-            Tables = tables;
-            InvokeAsync(StateHasChanged);
-        });
-
-        hubConnection.On<Dictionary<string, int>>("TableStatistics", (data) => {            
-            HotSeats = data;
-            timerObj.Start();
-            InvokeAsync(StateHasChanged);
-        });
-
-        await hubConnection.StartAsync();
+        await BuildHubConnectionAsync();
     
         if (hubConnection is not null)
         {
             await hubConnection.SendAsync("GetTables");
         }
+    }
+
+
+    private async Task BuildHubConnectionAsync()
+    {
+        try
+        {
+            Console.WriteLine("Building Hub Connection");
+
+            hubConnection = new HubConnectionBuilder()
+                .WithAutomaticReconnect()
+                .WithUrl(Navigation.ToAbsoluteUri("/tablehub"))
+                .AddNewtonsoftJsonProtocol(opts => 
+                    opts.PayloadSerializerSettings.TypeNameHandling = TypeNameHandling.Auto)    
+                .Build();
+
+            hubConnection.Reconnecting += (exception) =>
+            {
+                Console.WriteLine($"Connection started reconnecting due to an error: {exception}");
+                return BusyDialog();
+            };
+            hubConnection.Reconnected += (connectionId) =>
+            {
+                Console.WriteLine($"Connection successfully reconnected. The ConnectionId is now: {connectionId}");
+                DialogService.Close();
+                return null;
+            };
+
+            hubConnection.On<List<Table>, string>("UpdateSeats", (tables, seatPosition) =>
+            {            
+                Tables = tables;
+                InvokeAsync(StateHasChanged);
+            });
+
+            hubConnection.On<List<Table>>("TablesSet", (tables) => {
+                Tables = tables;
+                InvokeAsync(StateHasChanged);
+            });
+
+            hubConnection.On<Dictionary<string, int>>("TableStatistics", (data) => {            
+                HotSeats = data;
+                timerObj.Start();
+                InvokeAsync(StateHasChanged);
+            });
+
+            await hubConnection.StartAsync();
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine("Could not build connection! " + e.Message);
+        }        
     }
 
     private void OnUserFinish(Object source, ElapsedEventArgs e)
@@ -139,7 +168,7 @@
         if (hubConnection is not null)
         {
             await hubConnection.SendAsync("SeatedForShow", seatPosition);
-        }
+        }    
     }
 
     public async Task SeatLongClickAsync(string seatPosition) 
@@ -168,6 +197,20 @@
         }
         DialogService.Close();
     }
+
+    async Task BusyDialog()
+    {
+        await DialogService.OpenAsync("", ds =>
+            @<div class="rz-color-info-dark rz-text-align-center rz-p-2">
+                <div>
+                    <div class="lds-ripple"><div></div><div></div></div>
+                </div>
+                <div>
+                    <b>Reconnecting, please wait...</b>
+                </div>
+            </div>, new DialogOptions() { ShowTitle = false, Style = "min-height:auto;min-width:400px;width:auto", CloseDialogOnEsc = false });
+    }
+
 
     async Task ShowSimpleDialog() => await DialogService.OpenAsync("Reset Seats?", ds =>
     @<RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="1rem" Class="rz-mb-4">

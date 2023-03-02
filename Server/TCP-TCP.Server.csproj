@@ -18,4 +18,8 @@
     <ProjectReference Include="..\Shared\TCP-TCP.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="TCP.service" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+
 </Project>

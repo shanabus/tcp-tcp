@@ -4,61 +4,51 @@
 @inject NavigationManager Navigation
 @inject DialogService DialogService
 @using Microsoft.AspNetCore.SignalR.Client
-@using System.Timers
 
 <RadzenDialog />
 
-<RadzenLayout Style="grid-template-columns: auto 1fr auto; grid-template-areas: 'rz-header rz-header rz-header' 'rz-sidebar rz-body rz-right-sidebar'">
+<RadzenLayout>
     <RadzenBody>
         <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="2rem" Class="rz-mb-4">
             <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-1">
-                <RadzenCard Class="">
-                    Seats with humans: @Tables.SelectMany(x => x.Seats).Count(x => x.Active)
-                </RadzenCard>
+                    Seats with humans: <b style="font-size: larger;">@Tables.SelectMany(x => x.Seats).Count(x => x.Active)</b>
             </RadzenColumn>
             <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-1">
-                <RadzenCard Class="">
-                    Seats available: @Tables.SelectMany(x => x.Seats).Count(x => !x.Active)
-                </RadzenCard>
+                    Seats available: <b style="font-size: larger;">@Tables.SelectMany(x => x.Seats).Count(x => !x.Active)</b>
             </RadzenColumn>
-            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-1">                
-                <RadzenButton Text="Reset Seats" Style="width: 100%;" Class="rz-py-4" ButtonStyle="ButtonStyle.Primary" Click=@ShowSimpleDialog />                
-            </RadzenColumn>
-            <RadzenColumn Size="1" class="rz-color-info-dark rz-text-align-center rz-p-1">                
-                <RadzenButton Class="rz-py-4" ButtonStyle="ButtonStyle.Secondary" Click=@GetStatisticalDataClick>                
-                    <RadzenIcon Icon="grade" />
-                </RadzenButton>
-            </RadzenColumn>                        
+            <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center">                
+                <RadzenButton Text="Reset Seats" Style="width: 70%;" Class="rz-py-2" ButtonStyle="ButtonStyle.Primary" Click=@ShowSimpleDialog />                
+            </RadzenColumn>                    
         </RadzenRow>
         @{
             int tableXOffset = 70;
             int circleXStart = tableXOffset - 25;
             int circleYStart = 25;
         }           
-        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem">  
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-2 rz-pl-4">  
             @foreach (var table in Tables.Where(x => x.Row == 1))
             {   
-                <TableFragment Table="@table" HotSeats="@HotSeats" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
         @{
             tableXOffset = 50;
             circleXStart = tableXOffset - 25;        
         }  
-        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem">  
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-1 rz-pl-4">  
             @foreach (var table in Tables.Where(x => x.Row == 2))
             {   
-                <TableFragment Table="@table" HotSeats="@HotSeats" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
         @{
             tableXOffset = 50;
             circleXStart = tableXOffset - 25;        
         }  
-        <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Normal" Gap="-9rem">  
+        <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Normal" Gap="-9rem" Class="rz-pl-4">  
             @foreach (var table in Tables.Where(x => x.Row == 3))
             {   
-                <TableFragment Table="@table" HotSeats="@HotSeats" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
     </RadzenBody>
@@ -75,19 +65,11 @@
 
     List<Table> Tables { get; set; } = new List<Table>();
 
-    Dictionary<string, int> HotSeats { get; set; } = new Dictionary<string, int>();
-
-    private Timer timerObj = default!;
-    
     public bool IsConnected =>
         hubConnection?.State == HubConnectionState.Connected;
 
     protected override async Task OnInitializedAsync()
     {
-        timerObj = new Timer(5000);
-        timerObj.Elapsed += OnHotSeatTimerFinish;
-        timerObj.AutoReset = false;
-
         await BuildHubConnectionAsync();
     
         if (hubConnection is not null)
@@ -117,6 +99,7 @@
             hubConnection.Reconnected += (connectionId) =>
             {
                 Console.WriteLine($"Connection successfully reconnected. The ConnectionId is now: {connectionId}");
+                Task.Run(async () => await hubConnection.SendAsync("GetTables"));
                 DialogService.Close();
                 return null;
             };
@@ -132,35 +115,12 @@
                 InvokeAsync(StateHasChanged);
             });
 
-            hubConnection.On<Dictionary<string, int>>("TableStatistics", (data) => {            
-                HotSeats = data;
-                timerObj.Start();
-                InvokeAsync(StateHasChanged);
-            });
-
             await hubConnection.StartAsync();
         }
         catch(Exception e)
         {
             Console.WriteLine("Could not build connection! " + e.Message);
         }        
-    }
-
-    private void OnHotSeatTimerFinish(Object source, ElapsedEventArgs e)
-    {
-        InvokeAsync(() =>
-        {
-            HotSeats = new Dictionary<string, int>();
-            StateHasChanged();
-        });
-    }
-
-    public async Task GetStatisticalDataClick()
-    {
-        if (hubConnection is not null)
-        {
-            await hubConnection.SendAsync("GetTableStatisticData");
-        }
     }
 
     public async Task SeatClickAsync(string seatPosition) 

@@ -1,41 +1,34 @@
 @inherits LayoutComponentBase
 @using TCP_TCP.Shared.Model
 
-<RadzenColumn Size="2" class="rz-color-info-dark rz-text-align-center rz-p-1">                 
+<RadzenColumn Size="2" class="rz-color-info-dark rz-text-align-center">                 
     @if(Table.Seats.Count == 3) 
     {
-        @* <svg version="1.1" height="240" width="200" id="table-@Table.Position">
+        <svg version="1.1" height="220" width="200" id="table-@Table.Position" class="round-table-wrapper">
             <g>
-                <circle cx="85" cy="50" r="35" fill="@TableFillColor()" stroke="@TableStroke" />
+                <circle cx="85" cy="40" r="35" fill="@TableFillColor()" stroke="@TableStroke" />
                 <g>
-                    <text x="75" y="55">@Table.Position</text>
+                    <text x="75" y="45">@Table.Position</text>
                 </g>
 
                 @{
                     int circleXOffset = CircleXStart;
                     int xSideOffset = CircleXStart + 100;
-                    int circleYOffset = 50;
+                    int circleYOffset = 40;
                 }
                 
                 @foreach (var seat in Table.Seats)
                 {   
-                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill='@SeatFill(seat)' @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />                    
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
                     circleXOffset = (circleXOffset == CircleXStart)? CircleXStart + 120 : circleXOffset - 60;
                     circleYOffset = (circleXOffset == CircleXStart || circleXOffset == CircleXStart + 120)? circleYOffset: circleYOffset + 60 ;
                 }
             </g>
-        </svg> *@
-        
-        <div class="table-wrapper round-table-wrapper">
-            <div class="round-table">@Table.Position</div>
-            <div class="seat seat-1" style="background-color: @SeatFill(Table.Seats[0])" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", Table.Seats[0].Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", Table.Seats[0].Position)'></div>
-            <div class="seat seat-2" style="background-color: @SeatFill(Table.Seats[1])" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", Table.Seats[1].Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", Table.Seats[1].Position)'></div>
-            <div class="seat seat-3" style="background-color: @SeatFill(Table.Seats[2])" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", Table.Seats[2].Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", Table.Seats[2].Position)'></div>
-        </div>
+        </svg>
     }         
     else if (Table.Seats.Count == 6) 
     {
-        @* <svg version="1.1" height="200" width="280" id="table-@Table.Position">
+        <svg version="1.1" height="200" width="280" id="table-@Table.Position">
             <g>
                 <rect width="270" height="50" fill="@TableFillColor()" stroke="black" x="0" y="0"></rect>
                 <g>
@@ -49,32 +42,16 @@
                 
                 @foreach (var seat in Table.Seats)
                 {           
-                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" stroke="@SeatStroke" fill="@SeatFill(seat)"  @onpointerdown="PointerDown" @onpointerup="() => PointerUp(seat.Position)" />
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20"  class="circle-seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
                     circleXOffset += 45;
                 }     
             </g>
-        </svg> *@
-        
-        <div class="table-area">
-            <div class="table-wide" style="background-color: @TableFillColor(); border: 1px solid @TableStroke; ">
-                @Table.Position
-            </div>
-            <div class="seats">
-                @{
-                    int circleXOffset = 0;
-                }
-                @foreach (var seat in Table.Seats)
-                {           
-                    <button type="button" class="seat" @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' style="left: @circleXOffset; border: 1px solid @SeatStroke(seat); background-color: @SeatFill(seat);"></button>
-                    circleXOffset += 45;
-                } 
-            </div>
-        </div>
+        </svg>
     }
     else 
     {
-        <svg version="1.1" height="240" width="200" id="table-@Table.Position">
-            <g @onclick:stopPropagation="true" @onclick:preventDefault="true">
+        <svg version="1.1" height="220" width="200" id="table-@Table.Position">
+            <g>
                 <rect width="50" height="185" fill='@TableFillColor()' stroke="@TableStroke" x="@TableXOffset" y="0"></rect>
                 <g>
                     <text x="70" y="100">@Table.Position</text> 
@@ -111,9 +88,6 @@
 
     [Parameter]
     public Table Table { get; set; } = default!;
-
-    [Parameter]
-    public Dictionary<string, int> HotSeats { get; set; } = default!;
 
     [Parameter]
     public EventCallback<string> SeatClickEvent { get; set; } = default!;       
@@ -161,30 +135,7 @@
 
     public string SeatStroke(Seat seat)
     {
-        string seatStroke = SeatStrokeDefault;
-
-        var hasScore = HotSeats.ContainsKey(seat.Position);
-        if (hasScore)
-        {
-            var item = HotSeats.First(f => f.Key == seat.Position);
-
-            var top3 = HotSeats.OrderByDescending(x => x.Value).ToList().Take(3);
-
-            var avg = HotSeats.Select(x => x.Value).Average();
-
-            if (top3.Contains(item))
-            {
-                seatStroke = "gold";
-            }            
-            else if (item.Value > avg)
-            {
-                seatStroke = "red";
-            }
-            else
-            {
-                seatStroke = "blue";
-            }
-        }        
+        string seatStroke = SeatStrokeDefault;  
 
         return seatStroke;
     }

@@ -112,67 +112,11 @@ h1:focus {
     transform: rotate(-8deg);
 }
 
-.table-wrapper {
-    position: relative;
-}
 .round-table-wrapper {
     transform: rotate(10deg);
 }
-.round-table-wrapper .seat-1 {
-    left: 0;
-    top: -60px;
-}
-.round-table-wrapper .seat-2 {
-    left: 130px;
-    top: -102px;
-}
-.round-table-wrapper .seat-3 {
-    left: 66px;
-    top: -81px;
-}
 
-.round-table {
-    border: 1px solid black;
-    background-color: lightgrey;
-    border-radius: 50px;
-    width: 80px;
-    height: 80px;    
-    left: 45px;
-    position: relative;
-    color: black;
-    line-height: 80px;
-}
-
-.table-wide { 
-    width: 270px; 
-    height: 50px; 
-    line-height: 50px; 
-    color: black; 
-    margin-bottom: 5px; 
-    text-align: center;
-}
-.seats {
-    position: absolute;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-}
-.seats .seat {
-    margin-left: 5px;
-}
-.circle-seat {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-    cursor: pointer;
-}
 .seat {
-    background-color: white;
-    border:1px solid black;
-    border-radius: 20px;
-    width: 40px;
-    height: 40px;
-    position: relative;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;

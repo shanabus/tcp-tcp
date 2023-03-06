@@ -1,0 +1,28 @@
+@if(Visible)
+{
+    <g class="note">
+        <rect width="15" height="15" fill="@NoteFill" stroke="@NoteStroke" x="@(TableXOffset + 6)" y="@(TableYOffset + 6)" />    
+        <line x1="@(TableXOffset + 8)" y1="@(TableYOffset + 13)" x2="@(TableXOffset + 18)" y2="@(TableYOffset + 13)" stroke="@NoteStroke" />
+        <line x1="@(TableXOffset + 8)" y1="@(TableYOffset + 16)" x2="@(TableXOffset + 18)" y2="@(TableYOffset + 16)" stroke="@NoteStroke" />
+    </g>
+}
+
+@code
+{
+    [Parameter]
+    public int TableXOffset { get; set; }
+    
+    
+    [Parameter]
+    public int TableYOffset { get; set; }
+    
+
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public string NoteFill { get; set; } = default!;
+
+    [Parameter]
+    public string NoteStroke { get; set; } = default!;
+}

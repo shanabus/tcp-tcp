@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 using TCP_TCP.Shared.Model;
@@ -61,50 +63,70 @@ public class TableHub : Hub
     public async Task ResetSeats(bool allSeats)
     {
         var tables = GetTableLayout();
-        var saved = SetTableStatistics(tables);
 
         if (allSeats)
         {
-            tables.ForEach(t => t.Seats.ForEach(s => { s.Active = false; s.SecondShow = false; }));
+            tables.ForEach(t => {
+                t.Seats.ForEach(s => { s.Active = false; s.SecondShow = false; });
+                t.Note = "";
+            });
         }
         else
         {
-            tables.ForEach(t => t.Seats.Where(x => !x.SecondShow).ToList().ForEach(s => { s.Active = false; s.SecondShow = false; }));
+            tables.ForEach(t => {
+                t.Seats.Where(x => !x.SecondShow).ToList().ForEach(s => { s.Active = false; s.SecondShow = false; });
+                t.Note = "";
+            });
         }
         SetTableLayout(tables);
 
         await Clients.All.SendAsync("TablesSet", tables);
     }
 
-    public async Task GetTableStatisticData()
+    public async Task UpdateTableNote(string tablePosition, string note)
     {
-        var data = GetTableStatistics();
-        await Clients.Caller.SendAsync("TableStatistics", data);
+        var tables = GetTableLayout();
+        var table = tables.FirstOrDefault(x => x.Position == tablePosition);
+
+        if (table != null)
+        {
+            table.Note = note;
+
+            SetTableLayout(tables);
+
+            await Clients.All.SendAsync("TablesSet", tables);
+        }
     }
 
     protected List<Table> GetTableLayout()
     {
-        List<Table> tables = new List<Table>();
+        List<Table>? tables = new List<Table>();
 
-        if (!_memoryCache.Cache.TryGetValue<List<Table>>(CacheKey_TableLayout, out tables))
+        if (!_memoryCache.Cache.TryGetValue<List<Table>>(CacheKey_TableLayout, out tables) || tables is null)
         {
-            tables = new List<Table>();
-            tables.Add(new Table("1", 1, 8));
-            tables.Add(new Table("2", 1, 8));
-            tables.Add(new Table("3", 1, 8));
-            tables.Add(new Table("4", 1, 8));        
-            tables.Add(new Table("5", 1, 8));
+            // attempt to read from File
+            tables = ReadFile();
 
-            tables.Add(new Table("12", 2, 3));
-            tables.Add(new Table("6", 2, 8));
-            tables.Add(new Table("7", 2, 8));
-            tables.Add(new Table("8", 2, 8));
-            tables.Add(new Table("9", 2, 8));
+            if (tables == null || tables.Count == 0)
+            {
+                tables = new List<Table>();
+                tables.Add(new Table("1", 1, 8));
+                tables.Add(new Table("2", 1, 8));
+                tables.Add(new Table("3", 1, 8));
+                tables.Add(new Table("4", 1, 8));        
+                tables.Add(new Table("5", 1, 8));
 
-            
-            tables.Add(new Table("13", 3, 3));
-            tables.Add(new Table("10", 3, 6));
-            tables.Add(new Table("11", 3, 6));
+                tables.Add(new Table("12", 2, 3));
+                tables.Add(new Table("6", 2, 8));
+                tables.Add(new Table("7", 2, 8));
+                tables.Add(new Table("8", 2, 8));
+                tables.Add(new Table("9", 2, 8));
+
+                
+                tables.Add(new Table("13", 3, 3));
+                tables.Add(new Table("10", 3, 6));
+                tables.Add(new Table("11", 3, 6));
+            }
 
             SetTableLayout(tables);
         }
@@ -113,41 +135,36 @@ public class TableHub : Hub
 
     protected void SetTableLayout(List<Table> tables)
     {
-        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(6)).SetSize(1);
+        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(8)).SetSize(512);
         
         _memoryCache.Cache.Set(CacheKey_TableLayout, tables, cacheEntryOptions);
+
+        WriteFile(tables);
     }
 
-    protected Dictionary<string, int> GetTableStatistics() {
-        Dictionary<string, int> tableData;
+    private static readonly JsonSerializerOptions _options = 
+        new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = true };
         
-        if (!_memoryCache.Cache.TryGetValue<Dictionary<string, int>>(CacheKey_TableData, out tableData))
-        {
-            tableData = new Dictionary<string, int>();            
-        }
-        return tableData;
-    }
-    
-    protected Dictionary<string, int> SetTableStatistics(List<Table> tables) 
+    protected void WriteFile(List<Table> tables)
     {
-        var existingData = GetTableStatistics();
+        var jsonString = JsonSerializer.Serialize(tables, _options);
+        File.WriteAllText("tables-data.json", jsonString);
+    }
 
-        foreach(var s in tables.SelectMany(x => x.Seats).Where(x => x.Active || x.SecondShow)){
-            var score = s.SecondShow ? 2 : 1;
-            if (existingData.ContainsKey(s.Position))
-            {                
-                var ss = existingData[s.Position] += score;
-            }
-            else 
-            {
-                existingData.Add(s.Position, score);
-            }
+    protected List<Table> ReadFile()
+    {
+        List<Table> tables = new List<Table>();
+
+        try
+        {
+            string jsonString = File.ReadAllText("tables-data.json");
+            tables = JsonSerializer.Deserialize<List<Table>>(jsonString)!;        
         }
-
-        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromDays(7)).SetSize(10);
+        catch(Exception e)
+        {
+            Console.WriteLine("No tables found in file or file was missing. " + e.Message);            
+        }
+        return tables;
         
-        _memoryCache.Cache.Set(CacheKey_TableData, existingData, cacheEntryOptions);
-
-        return existingData;
     }
 }

@@ -1,0 +1,58 @@
+@using TCP_TCP.Shared.Model
+@using Microsoft.AspNetCore.SignalR.Client
+@inject DialogService DialogService
+
+<RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="2rem" Class="table-seating-info">
+    <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center">
+        Seated: <b style="font-size: larger;">@Table.Seats.Where(x => x.Active).Count()</b>
+    </RadzenColumn>
+    <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center">
+        Second Show: <b style="font-size: larger;">@Table.Seats.Where(x => x.SecondShow).Count()</b>
+    </RadzenColumn>
+    <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center">                
+        Available: <b style="font-size: larger;">@Table.Seats.Where(x => !x.Active).Count()</b>
+    </RadzenColumn>                    
+</RadzenRow>
+
+<div>
+    <RadzenTextArea @bind-Value=@Table.Note class="text-notes"  />
+</div>
+
+<RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="3rem" Class="rz-m-4">
+    <RadzenColumn Size="4" class="rz-color-info-dark rz-text-align-center rz-p-2">
+        <RadzenButton Text="Update Notes" Click="() => UpdateNotes()" Class="w-100" ButtonStyle="ButtonStyle.Success" />
+    </RadzenColumn>
+    <RadzenColumn Size="1" class="rz-color-info-dark rz-text-align-center rz-p-2">
+    </RadzenColumn>
+    <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+        <RadzenButton Text="Clear Notes" Click="() => ClearNotes()" Class="w-100" ButtonStyle="ButtonStyle.Warning" />
+    </RadzenColumn>
+    <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
+        <RadzenButton Text="No, Cancel" Click="() => DialogService.CloseSide()" Class="w-100" ButtonStyle="ButtonStyle.Light" />
+    </RadzenColumn>
+</RadzenRow>
+
+@code
+{
+    [Parameter]
+    public Table Table { get; set; } = default!;
+
+    
+    [Parameter]
+    public HubConnection? HubConnection  { get; set; } = default!;       
+
+    public async Task UpdateNotes()
+    {
+        if(HubConnection is not null)
+        {
+            await HubConnection.SendAsync("UpdateTableNote", Table.Position, Table.Note);
+            DialogService.CloseSide();
+        }
+    }
+
+    public async Task ClearNotes()
+    {
+        Table.Note = string.Empty;
+        await UpdateNotes();
+    }
+}

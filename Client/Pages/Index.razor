@@ -28,7 +28,7 @@
         <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-2 rz-pl-4">  
             @foreach (var table in Tables.Where(x => x.Row == 1))
             {   
-                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" TableClickEvent="@TableClickAsync" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
         @{
@@ -38,7 +38,7 @@
         <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-1 rz-pl-4">  
             @foreach (var table in Tables.Where(x => x.Row == 2))
             {   
-                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" TableClickEvent="@TableClickAsync" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
         @{
@@ -48,11 +48,12 @@
         <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Normal" Gap="-9rem" Class="rz-pl-4">  
             @foreach (var table in Tables.Where(x => x.Row == 3))
             {   
-                <TableFragment Table="@table" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
+                <TableFragment Table="@table" TableClickEvent="@TableClickAsync" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
             }
         </RadzenRow>
     </RadzenBody>
 </RadzenLayout>
+
 <div id="components-reconnect-modal">
     There was a problem with the connection!
     (Current reconnect attempt: 
@@ -101,7 +102,7 @@
                 Console.WriteLine($"Connection successfully reconnected. The ConnectionId is now: {connectionId}");
                 Task.Run(async () => await hubConnection.SendAsync("GetTables"));
                 DialogService.Close();
-                return null;
+                return Task.CompletedTask;
             };
 
             hubConnection.On<List<Table>, string>("UpdateSeats", (tables, seatPosition) =>
@@ -139,6 +140,23 @@
         }
     }
 
+    public async Task TableClickAsync(string tablePosition)
+    {
+        var table = Tables.First(x => x.Position == tablePosition);
+
+        await DialogService.OpenSideAsync<NoteFormFragment>($"Notes for Table {tablePosition}",
+                      parameters: new Dictionary<string, object> { { "Table", table }, { "HubConnection", hubConnection } },
+                      options: new SideDialogOptions { CloseDialogOnOverlayClick = true, Position = DialogPosition.Top, ShowMask = true }); 
+    }
+
+    public async Task UpdateTableNote(Table table)  
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("UpdateTableNote", table.Position, table.Note);
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)
@@ -172,13 +190,13 @@
     async Task ShowSimpleDialog() => await DialogService.OpenAsync("Reset Seats?", ds =>
     @<RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="1rem" Class="rz-mb-4">
             <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
-                <RadzenButton Text="Yes, All Seats" Click="() => Reset(true)" ButtonStyle="ButtonStyle.Warning" />
+                <RadzenButton Text="All Seats" Click="() => Reset(true)" ButtonStyle="ButtonStyle.Danger" />
             </RadzenColumn>
             <RadzenColumn Size="4" class="rz-color-info-dark rz-text-align-center rz-p-2">
-                <RadzenButton Text="Yes, Current Show" Click="() => Reset(false)" ButtonStyle="ButtonStyle.Primary" />
+                <RadzenButton Text="For Next Show" Click="() => Reset(false)" ButtonStyle="ButtonStyle.Warning" />
             </RadzenColumn>
             <RadzenColumn Size="3" class="rz-color-info-dark rz-text-align-center rz-p-2">
-                <RadzenButton Text="No, Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Secondary" />
+                <RadzenButton Text="No, Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
             </RadzenColumn>
     </RadzenRow>, new DialogOptions { Width = "900px"});
 }

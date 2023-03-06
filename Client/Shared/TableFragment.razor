@@ -6,8 +6,9 @@
     {
         <svg version="1.1" height="220" width="200" id="table-@Table.Position" class="round-table-wrapper">
             <g>
-                <circle cx="85" cy="40" r="35" fill="@TableFillColor()" stroke="@TableStroke" />
-                <g>
+                <g class="table" @onclick='() => TableClick(Table.Position)'>
+                    <circle cx="85" cy="40" r="35" fill="@TableFillColor()" stroke="@TableStroke" />
+                    <TableNoteSvg TableXOffset="@TableXOffset" Visible="@(!string.IsNullOrEmpty(Table.Note))" TableYOffset="10" NoteFill="white" NoteStroke="@TableStroke" />                
                     <text x="75" y="45">@Table.Position</text>
                 </g>
 
@@ -30,8 +31,9 @@
     {
         <svg version="1.1" height="200" width="280" id="table-@Table.Position">
             <g>
-                <rect width="270" height="50" fill="@TableFillColor()" stroke="black" x="0" y="0"></rect>
-                <g>
+                <g class="table" @onclick='() => TableClick(Table.Position)'>
+                    <rect width="270" height="50" fill="@TableFillColor()" stroke="@TableStroke" x="0" y="0" />
+                    <TableNoteSvg TableXOffset="0" Visible="@(!string.IsNullOrEmpty(Table.Note))" TableYOffset="0" NoteFill="white" NoteStroke="@TableStroke" />                
                     <text x="125" y="30">@Table.Position</text>
                 </g>
 
@@ -42,7 +44,7 @@
                 
                 @foreach (var seat in Table.Seats)
                 {           
-                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20"  class="circle-seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20"  class="seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
                     circleXOffset += 45;
                 }     
             </g>
@@ -52,8 +54,10 @@
     {
         <svg version="1.1" height="220" width="200" id="table-@Table.Position">
             <g>
-                <rect width="50" height="185" fill='@TableFillColor()' stroke="@TableStroke" x="@TableXOffset" y="0"></rect>
-                <g>
+                
+                <g class="table"@onclick='() => TableClick(Table.Position)'>
+                    <rect width="50" height="185" fill='@TableFillColor()' class="table" stroke="@TableStroke" x="@TableXOffset" y="0" />
+                    <TableNoteSvg TableXOffset="@TableXOffset" Visible="@(!string.IsNullOrEmpty(Table.Note))" TableYOffset="0" NoteFill="white" NoteStroke="@TableStroke" />
                     <text x="70" y="100">@Table.Position</text> 
                 </g>
                 
@@ -65,7 +69,7 @@
                 
                 @foreach (var seat in Table.Seats)
                 {           
-                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="circle-seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
                     
                     circleXOffset = circleXOffset == xSideOffset ? CircleXStart : xSideOffset;
                     circleYOffset = circleXOffset == xSideOffset ? circleYOffset : circleYOffset + 45;
@@ -94,6 +98,9 @@
     
     [Parameter]
     public EventCallback<string> SeatLongClickEvent { get; set; } = default!;       
+    
+    [Parameter]
+    public EventCallback<string> TableClickEvent { get; set; } = default!;       
 
     private DateTime PointerDownTime;
 
@@ -104,7 +111,7 @@
     private string EventSource = "";
 
     public string TableFillColor() => Table.Seats.All(x => x.Active || x.SecondShow)? "green" : TableFill;
-
+    
     public void PointerDown(string source)
     {
         EventSource = EventSource == ""? source : EventSource;
@@ -123,6 +130,11 @@
             }
             EventSource = "";
         }        
+    }
+
+    public async Task TableClick(string tablePosition)
+    {
+        await TableClickEvent.InvokeAsync(tablePosition);
     }
 
     public string SeatFill(Seat seat)

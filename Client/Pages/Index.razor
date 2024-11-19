@@ -25,7 +25,7 @@
             int circleXStart = tableXOffset - 25;
             int circleYStart = 25;
         }           
-        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-2 rz-pl-4">  
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-2 rz-pl-4 rz-ml-8">  
             @foreach (var table in Tables.Where(x => x.Row == 1))
             {   
                 <TableFragment Table="@table" TableClickEvent="@TableClickAsync" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
@@ -35,7 +35,7 @@
             tableXOffset = 50;
             circleXStart = tableXOffset - 25;        
         }  
-        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-1 rz-pl-4">  
+        <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Normal" Gap="-1rem" Class="rz-pt-2">  
             @foreach (var table in Tables.Where(x => x.Row == 2))
             {   
                 <TableFragment Table="@table" TableClickEvent="@TableClickAsync" SeatClickEvent="@SeatClickAsync" TableXOffset="@tableXOffset" SeatLongClickEvent="@SeatLongClickAsync" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>
@@ -45,7 +45,7 @@
             tableXOffset = 50;
             circleXStart = tableXOffset - 25;        
         }  
-        <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Normal" Gap="-9rem" Class="rz-pl-4">  
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Normal" Gap="-10rem" Class="rz-pr-6 rz-pt-4 third-row">  
             @foreach (var table in Tables.Where(x => x.Row == 3))
             {   
                 <TableFragment Table="@table" TableClickEvent="@TableClickAsync" SeatClickEvent="@SeatClickAsync" SeatLongClickEvent="@SeatLongClickAsync" TableXOffset="@tableXOffset" CircleXStart="@circleXStart" CircleYStart="@circleYStart"></TableFragment>

@@ -1,28 +1,51 @@
 @inherits LayoutComponentBase
 @using TCP_TCP.Shared.Model
 
-<RadzenColumn Size="2" class="rz-color-info-dark rz-text-align-center">                 
-    @if(Table.Seats.Count == 3) 
+<RadzenColumn Size="2" class="rz-color-info-dark rz-text-align-center" id='@("wrapper-" + Table.Position)'>                 
+    @if(Table.Position == "12") 
     {
         <svg version="1.1" height="220" width="200" id="table-@Table.Position" class="round-table-wrapper">
             <g>
                 <g class="table" @onclick='() => TableClick(Table.Position)'>
-                    <circle cx="85" cy="40" r="35" fill="@TableFillColor()" stroke="@TableStroke" />
+                    <circle cx="40" cy="115" r="35" fill="@TableFillColor()" stroke="@TableStroke" />
                     <TableNoteSvg TableXOffset="@TableXOffset" Visible="@(!string.IsNullOrEmpty(Table.Note))" TableYOffset="10" NoteFill="white" NoteStroke="@TableStroke" />                
-                    <text x="75" y="45">@Table.Position</text>
+                    <text x="30" y="123">@Table.Position</text>
                 </g>
 
                 @{
-                    int circleXOffset = CircleXStart;
-                    int xSideOffset = CircleXStart + 100;
-                    int circleYOffset = 40;
+                    int circleXOffset = 40;
+                    int circleYOffset = 55;
                 }
                 
                 @foreach (var seat in Table.Seats)
                 {   
                     <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
-                    circleXOffset = (circleXOffset == CircleXStart)? CircleXStart + 120 : circleXOffset - 60;
+                    circleXOffset = (circleXOffset == 40)? 100 : 40;
                     circleYOffset = (circleXOffset == CircleXStart || circleXOffset == CircleXStart + 120)? circleYOffset: circleYOffset + 60 ;
+                }
+            </g>
+        </svg>
+    }   
+    else if(Table.Position == "13") 
+    {
+        <svg version="1.1" height="200" width="200" id="table-@Table.Position" class="round-table-wrapper">
+            <g>
+                <g class="table" @onclick='() => TableClick(Table.Position)'>
+                    <circle cx="110" cy="80" r="35" fill="@TableFillColor()" stroke="@TableStroke" />
+                    <TableNoteSvg TableXOffset="@TableXOffset" Visible="@(!string.IsNullOrEmpty(Table.Note))" TableYOffset="10" NoteFill="white" NoteStroke="@TableStroke" />                
+                    <text x="100" y="88">@Table.Position</text>
+                </g>
+
+                @{
+                    int circleXOffset = 50;
+                    int circleYOffset = 80;
+                }
+                
+                @foreach (var seat in Table.Seats)
+                {   
+                    <circle cx="@circleXOffset" cy="@circleYOffset" r="20" class="seat" stroke="@SeatStroke(seat)" fill='@SeatFill(seat)' @ontouchstart='() => PointerDown("touch")' @ontouchend='() => PointerUp("touch", seat.Position)' @onpointerdown='() => PointerDown("pointer")' @onpointerup='() => PointerUp("pointer", seat.Position)' />
+                    circleXOffset = (circleXOffset == 50)? 110 : 170;
+                    circleYOffset = (circleYOffset == 80)? 20: 80 ;
                 }
             </g>
         </svg>

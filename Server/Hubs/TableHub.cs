@@ -123,9 +123,9 @@ public class TableHub : Hub
                 tables.Add(new Table("9", 2, 8));
 
                 
-                tables.Add(new Table("13", 3, 3));
                 tables.Add(new Table("10", 3, 6));
                 tables.Add(new Table("11", 3, 6));
+                tables.Add(new Table("13", 3, 3));
             }
 
             SetTableLayout(tables);

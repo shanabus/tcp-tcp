@@ -116,9 +116,19 @@ h1:focus {
 #table-9 {
     transform: rotate(-8deg);
 }
+#table-10, #table-11 {
+    margin-top: 12px;
+}
+#table-12 {
+    margin-left: 40px;
+}
 
-.round-table-wrapper {
-    transform: rotate(10deg);
+#wrapper-13 {
+    max-width: 240px;
+}
+
+.third-row {
+    margin-left: 80px
 }
 
 .table-seating-info {

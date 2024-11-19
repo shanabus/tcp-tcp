@@ -109,23 +109,22 @@ public class TableHub : Hub
 
             if (tables == null || tables.Count == 0)
             {
-                tables = new List<Table>();
-                tables.Add(new Table("1", 1, 8));
-                tables.Add(new Table("2", 1, 8));
-                tables.Add(new Table("3", 1, 8));
-                tables.Add(new Table("4", 1, 8));        
-                tables.Add(new Table("5", 1, 8));
-
-                tables.Add(new Table("12", 2, 3));
-                tables.Add(new Table("6", 2, 8));
-                tables.Add(new Table("7", 2, 8));
-                tables.Add(new Table("8", 2, 8));
-                tables.Add(new Table("9", 2, 8));
-
-                
-                tables.Add(new Table("10", 3, 6));
-                tables.Add(new Table("11", 3, 6));
-                tables.Add(new Table("13", 3, 3));
+                tables = new List<Table>
+                {
+                    new Table("1", 1, 8),
+                    new Table("2", 1, 8),
+                    new Table("3", 1, 8),
+                    new Table("4", 1, 8),
+                    new Table("5", 1, 8),
+                    new Table("13", 2, 3),
+                    new Table("6", 2, 8),
+                    new Table("7", 2, 8),
+                    new Table("8", 2, 8),
+                    new Table("9", 2, 8),
+                    new Table("10", 3, 6),
+                    new Table("11", 3, 6),
+                    new Table("12", 3, 3)
+                };
             }
 
             SetTableLayout(tables);
